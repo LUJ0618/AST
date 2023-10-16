@@ -2,6 +2,7 @@
 *.zip
 *.pyc
 *.DS_Store
+*.wav
 pretrained_models/ensemble/*
 pretrained_models/load_pretrained_model_internal.py
 pretrained_models/legal_pretrained_mdl/*
