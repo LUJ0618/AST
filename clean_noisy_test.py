@@ -87,34 +87,27 @@ def main():
     labels = load_label(label_csv)
 
     #############################################################################
-    # 두 폴더를 나타내는 디렉토리 경로를 정의합니다.
-    dir_path_clean = './samples_clean'  # 첫 번째 폴더의 경로로 교체합니다.
-    dir_path_noisy = './samples_noisy'  # 두 번째 폴더의 경로로 교체합니다.
+    # Samples directory folder
+    dir_path_clean = './samples_clean'  
+    dir_path_noisy = './samples_noisy' 
 
-    # 각 폴더의 파일 목록을 가져옵니다.
-    # file_names_clean = os.listdir(dir_path_clean)
-    # file_names_noisy = os.listdir(dir_path_noisy)
-
-    # 빨간색 그룹과 파란색 그룹의 데이터를 저장할 리스트를 만듭니다.
+    # data list for probs
     data_list_clean = []
     data_list_noisy = []
 
-    # 각 그룹에 대한 색상을 지정하는 리스트를 만듭니다.
+    # graph color
     color_red = 'red'
     color_blue = 'blue'
 
-    # 폴더를 처리하고 해당 그룹에 데이터를 추가하는 함수를 정의합니다.
+    # get top 10 porbs sum with AST Model
     def process_folder(folder_path, data_list, color):
         
-        # tags_dict = {}
-        # file_tags_list = []
         del_tag_list = [0, 7, 5, 2, 4, 1, 506, 525, 31, 500,
                         26, 504, 491, 137, 507, 378, 524, 46, 72, 44, 
                         407, 510, 459, 453, 387, 417, 360, 408, 55, 48,
                         73, 442, 24, 448, 41, 3, 81, 83]
 
         for file in os.listdir(folder_path):
-            # print(file[:-4])
             
             file_path = os.path.join(folder_path, file)
             feats = make_features(file_path, mel_bins=128)
@@ -132,30 +125,17 @@ def main():
             for i in del_tag_list:
                 result_output[i] = 0
 
-            # del result_output[0]
             sorted_indexes = np.argsort(result_output)[::-1]
-            # sum_top10_probs += sum(result_output[sorted_indexes[:10]])
 
             for k in range(10):
-                # file_tags_list.append(np.array(labels)[sorted_indexes[k]])
                 
-                print('- {}: {:.4f}'.format(np.array(labels)[sorted_indexes[k]], result_output[sorted_indexes[k]]))
+                # print('- {}: {:.4f}'.format(np.array(labels)[sorted_indexes[k]], result_output[sorted_indexes[k]]))
                 sum_top10_probs = sum_top10_probs + result_output[sorted_indexes[k]]
-                print(sum_top10_probs)
-            
-        # for tag in file_tags_list:
-        #     if tag in tags_dict:
-        #         tags_dict[tag] += 1
-        #     else:
-        #         tags_dict[tag] = 1
+                # print(sum_top10_probs)
 
-        # return tags_dict
-
-
-            # 해당 데이터를 해당 그룹의 데이터 리스트에 추가합니다.
             data_list.append([file[:-4], sum_top10_probs, result_output[513], color])
 
-    # '빨간색' 폴더를 처리하고 빨간색 그룹에 데이터를 추가합니다.
+    # Clean data
     process_folder(dir_path_clean, data_list_clean, color_red)
     # filtered_element_count = {element: count for element, count in clean_tags_dict.items() if count >= 15}
     
@@ -164,7 +144,7 @@ def main():
 
     
 
-    # '파란색' 폴더를 처리하고 파란색 그룹에 데이터를 추가합니다.
+    # Noisy data
     process_folder(dir_path_noisy, data_list_noisy, color_blue)
     # filtered_element_count = {element: count for element, count in noisy_tags_dict.items() if count >= 15}
     # for tag, count in filtered_element_count.items():
@@ -202,14 +182,12 @@ def main():
 
     import matplotlib.pyplot as plt
 
-    # 빨간색 그룹과 파란색 그룹의 데이터 포인트를 다른 색상과 레이블로 플롯합니다.
     for data in data_list_clean:
         plt.scatter(data[0], data[1], label=data[0], color=data[3])
 
     for data in data_list_noisy:
         plt.scatter(data[0], data[1], label=data[0], color=data[3])
 
-    # 그래프 설정
     plt.axhline(y=threshold, color='gray', linestyle='--', label=f'Threshold = {threshold}')
     plt.xlabel('File_names')
     plt.ylabel('Top10_Probs_Sum')
