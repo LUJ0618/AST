@@ -10,6 +10,7 @@ from models import ASTModel
 
 os.environ['TORCH_HOME'] = '../pretrained_models'
 
+
 class ASTModelVis(ASTModel):
     def get_att_map(self, block, x):
         qkv = block.attn.qkv
@@ -63,7 +64,9 @@ def main():
     if os.path.exists('../pretrained_models/audio_mdl.pth') is False:
         wget.download(audioset_mdl_url, out='../pretrained_models/audio_mdl.pth')
 
+    
     # Assume each input spectrogram has 1024 time frames
+
     input_tdim = 1024
     checkpoint_path = '../pretrained_models/audio_mdl.pth'
     # now load the visualization model
@@ -138,19 +141,22 @@ def main():
     noise_vals = [data[2] for data in data_list]
     mean_noise_vals = np.mean(noise_vals)
 
+    new_noise_vals = [val if val < 2.1e-5 else 0 for val in noise_vals]
     
-    plt.scatter(names, noise_vals, label="데이터 포인트")
+
+    
+    plt.scatter(names, new_noise_vals, label="데이터 포인트")
     plt.xlabel(file_names)
     # plt.ylabel(f"Speech Avg : {mean_speech_vals}")
     plt.ylabel(f"Noise Avg : {mean_noise_vals}")
-    plt.title("Clean Data Noise probs")
+    plt.title("Clean Data over Noise probs")
 
     # for _, data in enumerate(data_list):
     #     plt.annotate(data[0], (data[1], data[2]))
 
     plt.legend()
     plt.grid(True)
-    plt.savefig("Clean Data Noise probs")
+    plt.savefig("Clean Data over Noise probs")
     #plt.show()
 
 
