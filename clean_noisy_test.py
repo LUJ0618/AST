@@ -106,8 +106,12 @@ def main():
     # 폴더를 처리하고 해당 그룹에 데이터를 추가하는 함수를 정의합니다.
     def process_folder(folder_path, data_list, color):
         
-        tags_dict = {}
-        file_tags_list = []
+        # tags_dict = {}
+        # file_tags_list = []
+        del_tag_list = [0, 7, 5, 2, 4, 1, 506, 525, 31, 500,
+                        26, 504, 491, 137, 507, 378, 524, 46, 72, 44, 
+                        407, 510, 459, 453, 387, 417, 360, 408, 55, 48,
+                        73, 442, 24, 448, 41, 3, 81, 83]
 
         for file in os.listdir(folder_path):
             # print(file[:-4])
@@ -117,97 +121,102 @@ def main():
             feats_data = feats.expand(1, input_tdim, 128)
             feats_data = feats_data.to(torch.device("cuda:0"))
 
-            # sum_top10_probs = 0
+            sum_top10_probs = 0
 
             with torch.no_grad():
                 with autocast():
                     output = ast_mdl.forward(feats_data)
                     output = torch.sigmoid(output)
+
             result_output = output.data.cpu().numpy()[0]
-            result_output[0] = 0
+            for i in del_tag_list:
+                result_output[i] = 0
+
             # del result_output[0]
             sorted_indexes = np.argsort(result_output)[::-1]
             # sum_top10_probs += sum(result_output[sorted_indexes[:10]])
 
-            for k in range(30):
-                file_tags_list.append(np.array(labels)[sorted_indexes[k]])
+            for k in range(10):
+                # file_tags_list.append(np.array(labels)[sorted_indexes[k]])
                 
-                # print('- {}: {:.4f}'.format(np.array(labels)[sorted_indexes[k]], result_output[sorted_indexes[k]]))
-                # sum_top10_probs = sum_top10_probs + result_output[sorted_indexes[k]]
-                # print(sum_top10_probs)
+                print('- {}: {:.4f}'.format(np.array(labels)[sorted_indexes[k]], result_output[sorted_indexes[k]]))
+                sum_top10_probs = sum_top10_probs + result_output[sorted_indexes[k]]
+                print(sum_top10_probs)
             
-        for tag in file_tags_list:
-            if tag in tags_dict:
-                tags_dict[tag] += 1
-            else:
-                tags_dict[tag] = 1
+        # for tag in file_tags_list:
+        #     if tag in tags_dict:
+        #         tags_dict[tag] += 1
+        #     else:
+        #         tags_dict[tag] = 1
 
-        return tags_dict
+        # return tags_dict
 
 
             # 해당 데이터를 해당 그룹의 데이터 리스트에 추가합니다.
-            # data_list.append([file[:-4], sum_top10_probs, result_output[513], color])
+            data_list.append([file[:-4], sum_top10_probs, result_output[513], color])
 
     # '빨간색' 폴더를 처리하고 빨간색 그룹에 데이터를 추가합니다.
-    clean_tags_dict = process_folder(dir_path_clean, data_list_clean, color_red)
-    filtered_element_count = {element: count for element, count in clean_tags_dict.items() if count >= 15}
+    process_folder(dir_path_clean, data_list_clean, color_red)
+    # filtered_element_count = {element: count for element, count in clean_tags_dict.items() if count >= 15}
     
-    for tag, count in filtered_element_count.items():
-        print(f"tag: {tag}, count: {count}")
-
-    # '파란색' 폴더를 처리하고 파란색 그룹에 데이터를 추가합니다.
-    # noisy_tags_dict = process_folder(dir_path_noisy, data_list_noisy, color_blue)
-
-    # for tag, count in noisy_tags_dict.items():
+    # for tag, count in filtered_element_count.items():
     #     print(f"tag: {tag}, count: {count}")
 
-    # threshold = 0.68
-    # max_value_clean = max(item[1] for item in data_list_clean)
-    # min_value_clean = min(item[1] for item in data_list_clean)
+    
 
-    # max_value_noisy = max(item[1] for item in data_list_noisy)
-    # min_value_noisy = min(item[1] for item in data_list_noisy)
+    # '파란색' 폴더를 처리하고 파란색 그룹에 데이터를 추가합니다.
+    process_folder(dir_path_noisy, data_list_noisy, color_blue)
+    # filtered_element_count = {element: count for element, count in noisy_tags_dict.items() if count >= 15}
+    # for tag, count in filtered_element_count.items():
+    #     print(f"tag: {tag}, count: {count}")
 
-    # max_value = max(max_value_clean, max_value_noisy) + 0.1
-    # min_value = min(min_value_clean, min_value_noisy)
+    threshold = 0.1
+    max_value_clean = max(item[1] for item in data_list_clean)
+    min_value_clean = min(item[1] for item in data_list_clean)
 
-    # current_value = min_value
+    max_value_noisy = max(item[1] for item in data_list_noisy)
+    min_value_noisy = min(item[1] for item in data_list_noisy)
 
-    # while current_value <= max_value:
-    #     filtered_data_clean = [data for data in data_list_clean if data[1] < current_value]
-    #     print(len(filtered_data_clean)/50)
-    #     filtered_data_noisy = [data for data in data_list_noisy if data[1] < current_value]
-    #     print((50-len(filtered_data_noisy))/50)
-    #     print(current_value)
+    max_value = max(max_value_clean, max_value_noisy) + 0.1
+    min_value = min(min_value_clean, min_value_noisy)
 
-    #     print('#####################')
+    current_value = min_value
 
-    #     current_value += 0.1
+    while current_value <= max_value:
+        filtered_data_clean = [data for data in data_list_clean if data[1] < current_value]
+        print(len(filtered_data_clean)/50)
+        filtered_data_noisy = [data for data in data_list_noisy if data[1] < current_value]
+        print((50-len(filtered_data_noisy))/50)
+        print(current_value)
 
-    # filtered_data_clean = [data for data in data_list_clean if data[1] < threshold]
-    # print(len(filtered_data_clean))
-    # print(len(filtered_data_clean)/50)
-    # filtered_data_noisy = [data for data in data_list_noisy if data[1] < threshold]
-    # print(len(filtered_data_noisy))
-    # print((50-len(filtered_data_noisy))/50)
+        print('#####################')
 
-    # import matplotlib.pyplot as plt
+        current_value += 0.1
+
+    filtered_data_clean = [data for data in data_list_clean if data[1] < threshold]
+    print(len(filtered_data_clean))
+    print(len(filtered_data_clean)/50)
+    filtered_data_noisy = [data for data in data_list_noisy if data[1] < threshold]
+    print(len(filtered_data_noisy))
+    print((50-len(filtered_data_noisy))/50)
+
+    import matplotlib.pyplot as plt
 
     # 빨간색 그룹과 파란색 그룹의 데이터 포인트를 다른 색상과 레이블로 플롯합니다.
-    # for data in data_list_clean:
-    #     plt.scatter(data[0], data[1], label=data[0], color=data[3])
+    for data in data_list_clean:
+        plt.scatter(data[0], data[1], label=data[0], color=data[3])
 
-    # for data in data_list_noisy:
-    #     plt.scatter(data[0], data[1], label=data[0], color=data[3])
+    for data in data_list_noisy:
+        plt.scatter(data[0], data[1], label=data[0], color=data[3])
 
     # 그래프 설정
-    # plt.axhline(y=threshold, color='gray', linestyle='--', label=f'Threshold = {threshold}')
-    # plt.xlabel('File_names')
-    # plt.ylabel('Noise_porbs')
-    # plt.title('Clean vs Noisy Data Top10 Probs Sum')
+    plt.axhline(y=threshold, color='gray', linestyle='--', label=f'Threshold = {threshold}')
+    plt.xlabel('File_names')
+    plt.ylabel('Top10_Probs_Sum')
+    plt.title('Clean vs Noisy Data Top10 Probs Sum')
     # plt.legend(loc='upper right')
-    # plt.savefig("Clean vs Noisy Data over Noise probs")
-    # plt.show()
+    plt.savefig("Clean vs Noisy Data Top10 Probs Sum")
+    plt.show()
 
 
 
